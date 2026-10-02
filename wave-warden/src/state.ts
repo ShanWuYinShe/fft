@@ -3,9 +3,10 @@ import {
   ENEMY_KINDS, FIELD_W, FIELD_H, PREP_TIME, SELL_RATIO, TOWER_COST, TOWER_LEVELS, TOWER_UP_COST, TAU,
   type EnemyKind,
 } from './defs';
+import { SHAPES, buildShape, randomBlobTable, type ShapeBuild } from './shapes';
 import type { LevelDef, Pt, Wave } from './levels';
 
-export interface EnemyLayer { k: number; amp: number; maxAmp: number }
+export interface EnemyLayer { k: number; amp: number; maxAmp: number; phase?: number }
 export interface Enemy {
   id: number;
   kind: EnemyKind;
@@ -15,6 +16,7 @@ export interface Enemy {
   shiftT: number;       // 变奏灵切换倒计时（非变奏灵为 Infinity）
   hitFlash: number;
   seed: number;         // 视觉随机相位
+  shape?: ShapeBuild;   // 形影灵：剩余分量实时重建轮廓
 }
 export interface Tower { id: number; k: number; level: number; x: number; y: number; cool: number; invested: number; shots: number; hits: number }
 export interface Shot { x: number; y: number; targetId: number; k: number; dmg: number; phase: number; dead: boolean }
@@ -75,6 +77,7 @@ export interface SessionOpts {
   lives: number;
   pearls: number;
   onEvent: (e: SessionEvent) => void;
+  userShape?: Float64Array;       // 画影秘境：用户手绘轮廓（'user' 形状取用）
 }
 
 export type SessionEvent =
@@ -95,6 +98,7 @@ export class Session {
   waveProvider: (n: number) => Wave;
   totalWaves: number;
   onEvent: (e: SessionEvent) => void;
+  userShape?: Float64Array;
 
   lives: number;
   pearls: number;
@@ -123,6 +127,7 @@ export class Session {
     this.waveProvider = o.waveProvider;
     this.totalWaves = o.totalWaves;
     this.onEvent = o.onEvent;
+    this.userShape = o.userShape;
     this.lives = o.lives;
     this.pearls = o.pearls;
     this.path = new PathRun(o.level.path);
@@ -199,7 +204,19 @@ export class Session {
   }
 
   private spawnEnemy(kind: EnemyKind, ampScale: number): void {
-    const layers: EnemyLayer[] = kind.ks.map(k => ({ k, amp: kind.ampPerLayer * ampScale, maxAmp: kind.ampPerLayer * ampScale }));
+    let layers: EnemyLayer[];
+    let shape: ShapeBuild | undefined;
+    if (kind.shape) {
+      // 形影灵：轮廓 → DFT → 血层（每层携带相位，渲染时按剩余血量实时重建轮廓）
+      const table = kind.shape === 'user' ? this.userShape
+        : kind.shape === 'blob' ? randomBlobTable(Math.floor(Math.random() * 1e6))
+        : SHAPES[kind.shape]?.table;
+      const total = kind.ampPerLayer * ampScale;
+      shape = buildShape(table ?? SHAPES.heart.table, 19, total);
+      layers = shape.layers;
+    } else {
+      layers = kind.ks.map(k => ({ k, amp: kind.ampPerLayer * ampScale, maxAmp: kind.ampPerLayer * ampScale }));
+    }
     const p = this.path.posAt(0);
     this.enemies.push({
       id: this.nextId++,
@@ -210,6 +227,7 @@ export class Session {
       shiftT: kind.shift ? 3 : Infinity,
       hitFlash: 0,
       seed: Math.random() * TAU,
+      shape,
     });
   }
 

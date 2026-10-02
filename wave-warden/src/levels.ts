@@ -109,10 +109,10 @@ const CH3: LevelDef[] = [
     chapter: 3, name: '谷底', intro: '叠涌灵的花影更繁复——沉住气，一层层剥平。',
     path: PATH_ZIGZAG, unlockedTowerKs: [1, 2, 3, 4],
     waves: [
-      W(38, g('treble', 3, 2.4), g('ripple4', 8, 0.8, 3)),
+      W(38, g('shapeHeart', 1, 1, 0), g('treble', 3, 2.4, 3), g('ripple4', 8, 0.8, 6)),
       W(40, g('shifter', 4, 2.4), g('treble', 3, 2.4, 4), g('ripple3', 8, 0.8, 8)),
       W(42, g('treble', 5, 2.2, 0, 1.15), g('ripple4', 10, 0.7, 3, 1.2)),
-      W(44, g('shifter', 5, 2.2), g('treble', 5, 2.0, 3, 1.2), g('ripple', 10, 0.6, 6, 1.3)),
+      W(44, g('shapeStar', 1, 1, 0), g('shifter', 4, 2.2, 3, 1.15), g('treble', 4, 2.0, 6, 1.2)),
       W(52, g('treble', 7, 1.8), g('shifter', 5, 2.2, 3, 1.25), g('ripple4', 12, 0.6, 6, 1.3)),
     ],
   },
@@ -127,7 +127,7 @@ const CH4: LevelDef[] = [
       W(40, g('twin', 5, 2.0, 0, 1.25), g('ripple4', 10, 0.7, 3, 1.2)),
       W(42, g('treble', 5, 2.0, 0, 1.2), g('shifter', 4, 2.2, 4, 1.15)),
       W(44, g('ripple4', 14, 0.6, 0, 1.3), g('twin', 6, 1.9, 4, 1.3)),
-      W(46, g('treble', 6, 1.9, 0, 1.3), g('shifter', 5, 2.0, 3, 1.25), g('ripple3', 10, 0.7, 7, 1.3)),
+      W(46, g('shapeCrown', 1, 1, 0), g('treble', 5, 1.9, 3, 1.25), g('shifter', 4, 2.0, 6, 1.2)),
       W(50, g('twin', 7, 1.7, 0, 1.35), g('treble', 6, 1.9, 3, 1.3), g('shifter', 5, 2.0, 8, 1.3)),
     ],
   },
@@ -138,8 +138,8 @@ const CH4: LevelDef[] = [
       W(44, g('treble', 5, 2.0, 0, 1.25), g('shifter', 4, 2.2, 4)),
       W(46, g('ripple4', 14, 0.55, 0, 1.3), g('twin', 6, 1.8, 4, 1.3)),
       W(48, g('treble', 7, 1.8, 0, 1.3), g('shifter', 5, 2.0, 3, 1.3)),
-      W(50, g('twin', 8, 1.6, 0, 1.4), g('ripple4', 14, 0.55, 3, 1.35), g('treble', 5, 1.9, 8, 1.3)),
-      W(80, g('boss', 1, 1, 0, 1), g('twin', 6, 2.2, 6, 1.3), g('ripple4', 12, 0.7, 12, 1.3), g('boss', 1, 1, 22, 1.1)),
+      W(50, g('shapeBat', 1, 1, 0), g('shapeGear', 1, 1, 5), g('treble', 5, 1.9, 9, 1.3)),
+      W(80, g('boss', 1, 1, 0, 1), g('shapeCrown', 1, 1, 6, 1.2), g('twin', 6, 2.2, 6, 1.3), g('ripple4', 12, 0.7, 12, 1.3), g('boss', 1, 1, 22, 1.1)),
     ],
   },
 ];
@@ -170,6 +170,10 @@ export function endlessWave(n: number): Wave {
   if (n >= 4) groups.push(g('twin', 2 + Math.floor(n / 3), 2.0, 3, scale));
   if (n >= 7) groups.push(g('shifter', 1 + Math.floor(n / 4), 2.2, 4, scale));
   if (n >= 9) groups.push(g('treble', 1 + Math.floor(n / 4), 2.2, 5, scale));
+  if (n >= 6 && n % 3 === 0) {
+    const shapes = ['shapeHeart', 'shapeStar', 'shapeBat', 'shapeGear', 'shapeBlob'];
+    groups.push(g(shapes[Math.floor(n / 3) % shapes.length], 1, 1, 7, scale));
+  }
   // 每 10 波一个百澜
   if (n % 10 === 0) groups.push(g('boss', Math.floor(n / 10), 4, 6, scale * 0.9));
   return { groups, reward: 30 + n * 4 };

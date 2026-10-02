@@ -198,9 +198,9 @@ export function hideIntro(): void {
   $('ovIntro').classList.remove('show');
 }
 
-export function showWin(levelIdx: number, stars: number, onNext: () => void, onMap: () => void): void {
-  const lv = ALL_LEVELS[levelIdx];
-  $('winName').textContent = lv.name + ' · 澜平水静';
+export function showWin(levelIdx: number, stars: number, onNext: () => void, onMap: () => void, customName?: string): void {
+  const lv = levelIdx >= 0 ? ALL_LEVELS[levelIdx] : null;
+  $('winName').textContent = customName ?? (lv ? lv.name + ' · 澜平水静' : '澜平水静');
   $('winStars').innerHTML = '★'.repeat(stars) + '<span class="off">' + '★'.repeat(3 - stars) + '</span>';
   $('winText').textContent = stars === 3 ? '静水无痕，perfect 守护。' : stars === 2 ? '湖面微澜，守护尚稳。' : '险险守住，再布精些。';
   $('ovWin').classList.add('show');

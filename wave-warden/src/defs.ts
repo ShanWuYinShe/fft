@@ -44,7 +44,8 @@ export interface EnemyKind {
   key: string;
   name: string;
   ks: number[];          // 携带的涌律层（单频 1 层；精英多层）
-  ampPerLayer: number;   // 每层振幅（=该层血量）
+  shape?: string;        // 形影灵：轮廓 key（SHAPES）或 'user'/'blob'，血层由轮廓 DFT 生成
+  ampPerLayer: number;   // 每层振幅（=该层血量；形影灵为全部血层总血量）
   speed: number;         // px/s
   leak: number;          // 漏进静心湖扣的平静度
   bounty: number;        // 潮珠赏金
@@ -61,6 +62,14 @@ export const ENEMY_KINDS: Record<string, EnemyKind> = {
   treble:  { key: 'treble',  name: '叠涌灵', ks: [2, 3], ampPerLayer: 28, speed: 34, leak: 2, bounty: 12 },
   shifter: { key: 'shifter', name: '变奏灵', ks: [2], ampPerLayer: 40, speed: 40, leak: 2, bounty: 14, shift: [2, 4] },
   boss:    { key: 'boss',    name: '百澜',   ks: [1, 2, 3, 4], ampPerLayer: 90, speed: 20, leak: 4, bounty: 60, boss: true },
+  // 形影灵：任意轮廓经 DFT 拆解为血层，削哪层形状就塌哪块
+  shapeHeart: { key: 'shapeHeart', name: '心之形影', ks: [], shape: 'heart', ampPerLayer: 60, speed: 30, leak: 2, bounty: 16 },
+  shapeStar:  { key: 'shapeStar',  name: '五芒形影', ks: [], shape: 'star5',  ampPerLayer: 64, speed: 30, leak: 2, bounty: 16 },
+  shapeCrown: { key: 'shapeCrown', name: '王冠形影', ks: [], shape: 'crown',  ampPerLayer: 72, speed: 28, leak: 2, bounty: 18 },
+  shapeBat:   { key: 'shapeBat',   name: '翼影',     ks: [], shape: 'bat',   ampPerLayer: 62, speed: 34, leak: 2, bounty: 16 },
+  shapeGear:  { key: 'shapeGear',  name: '齿影',     ks: [], shape: 'gear',  ampPerLayer: 72, speed: 30, leak: 2, bounty: 18 },
+  shapeBlob:  { key: 'shapeBlob',  name: '无名形影', ks: [], shape: 'blob',  ampPerLayer: 60, speed: 30, leak: 2, bounty: 15 },
+  shapeUser:  { key: 'shapeUser',  name: '你的形影', ks: [], shape: 'user',  ampPerLayer: 76, speed: 28, leak: 2, bounty: 25 },
 };
 
 /** 击杀赏金结算 */

@@ -2,6 +2,7 @@
 import './style.css';
 import { CELL, FIELD_H, FIELD_W, START_LIVES, TOWER_COST } from './defs';
 import { ALL_LEVELS, endlessWave, type Wave } from './levels';
+import { tableFromPoints } from './shapes';
 import { Session, type Tower } from './state';
 import { renderFrame } from './render';
 import * as UI from './ui';
@@ -13,7 +14,8 @@ const ctx = cv.getContext('2d')!;
 
 let progress = UI.loadProgress();
 let session: Session | null = null;
-let mode: { type: 'level'; idx: number } | { type: 'endless' } | null = null;
+let mode: { type: 'level'; idx: number } | { type: 'endless' } | { type: 'draw' } | null = null;
+let userShapeTable: Float64Array | null = null;
 let placingK: number | null = null;
 let selectedTower: Tower | null = null;
 let hover: { gx: number; gy: number } | null = null;
@@ -46,15 +48,23 @@ function endlessLevel() {
 function startBattle(): void {
   const isEndless = mode!.type === 'endless';
   const lvlIdx = mode!.type === 'level' ? mode!.idx : 0;
-  const level = isEndless ? endlessLevel() : ALL_LEVELS[lvlIdx];
+  const isDraw = mode!.type === 'draw';
+  const level = (isEndless || isDraw) ? endlessLevel() : ALL_LEVELS[lvlIdx];
+  const drawProvider = (n: number) => {
+    // 画影秘境：第一涌是你的形影本体，随后两涌是它碎裂出的杂流
+    if (n === 1) return { groups: [{ kind: 'shapeUser', count: 1, gap: 1, delay: 0 }], reward: 60 };
+    if (n === 2) return { groups: [{ kind: 'ripple', count: 10, gap: 0.8 }, { kind: 'ripple2', count: 8, gap: 0.9, delay: 3 }], reward: 50 };
+    return { groups: [{ kind: 'ripple2', count: 10, gap: 0.7 }, { kind: 'twin', count: 3, gap: 2.2, delay: 3 }], reward: 60 };
+  };
   unlockedKs = level.unlockedTowerKs;
   session = new Session({
     level,
-    waveProvider: isEndless ? endlessWave : n => level.waves[n - 1],
-    totalWaves: isEndless ? Infinity : level.waves.length,
+    waveProvider: isDraw ? drawProvider : isEndless ? endlessWave : n => level.waves[n - 1],
+    totalWaves: isDraw ? 3 : isEndless ? Infinity : level.waves.length,
     lives: START_LIVES,
-    pearls: isEndless ? 170 : 140,
+    pearls: isEndless ? 170 : 150,
     onEvent: () => {},
+    userShape: userShapeTable ?? undefined,
   });
   wireEvents(session);
   placingK = null;
@@ -64,7 +74,12 @@ function startBattle(): void {
   UI.buildCards(unlockedKs, null, session.pearls, onCardSelect);
   UI.hideTowerPanel();
   fitBattle();
-  if (isEndless) {
+  if (isDraw) {
+    UI.showIntro(
+      { name: '画影秘境 · 你的形影', text: '这就是你画出的涌灵。它已被拆成几缕涌律——看它头顶的彩色血条，用对应瓣数的音叉塔逐层削平它。', waves: '共 3 涌 · 守住即成' },
+      () => { /* 关闭引子进入准备期 */ },
+    );
+  } else if (isEndless) {
     UI.showIntro(
       { name: '无尽乱流', text: '乱流一波强过一波，守到守不住为止。瓣数会越来越多、越来越快。', waves: '最佳纪录 · ' + progress.endlessBest + ' 涌' },
       () => { /* 引子关闭即开始准备期 */ },
@@ -110,7 +125,12 @@ function starsFor(lives: number): number {
 
 function onWin(): void {
   sfx.winFanfare();
-  if (mode!.type === 'level') {
+  if (mode!.type === 'draw') {
+    UI.showWin(-1, 3,
+      () => { UI.hideOverlay('ovWin'); openMap(); },
+      () => { UI.hideOverlay('ovWin'); openMap(); },
+      '画影秘境 · 归于平静');
+  } else if (mode!.type === 'level') {
     const idx = mode!.idx;
     const stars = starsFor(session!.lives);
     progress.unlocked = Math.max(progress.unlocked, idx + 1);
@@ -135,6 +155,10 @@ function onLose(): void {
     UI.showEndlessOver(cleared + 1, progress.endlessBest, isRecord,
       () => { UI.hideOverlay('ovEndless'); playEndless(); },
       () => { UI.hideOverlay('ovEndless'); UI.showScreen('scrTitle'); });
+  } else if (mode!.type === 'draw') {
+    UI.showLose(session!.waveNumber,
+      () => { UI.hideOverlay('ovLose'); startBattle(); },
+      () => { UI.hideOverlay('ovLose'); openMap(); });
   } else {
     UI.showLose(session!.waveNumber,
       () => { UI.hideOverlay('ovLose'); startBattle(); },
@@ -240,6 +264,85 @@ function fitBattle(): void {
 
 window.addEventListener('resize', fitBattle);
 
+/* ── 画影秘境 ── */
+let drawPoints: [number, number][] = [];
+let drawing = false;
+
+function openDrawRealm(): void {
+  UI.showScreen('scrMap');
+  drawPoints = [];
+  const pad = $('drawPad') as HTMLCanvasElement;
+  const g = pad.getContext('2d')!;
+  g.clearRect(0, 0, 320, 320);
+  $('btnDrawFight').setAttribute('disabled', '');
+  $('drawTip').textContent = '一笔画完闭合图形，松开即成。';
+  $('ovDraw').classList.add('show');
+}
+
+function drawStroke(): void {
+  const pad = $('drawPad') as HTMLCanvasElement;
+  const g = pad.getContext('2d')!;
+  g.clearRect(0, 0, 320, 320);
+  if (drawPoints.length < 2) return;
+  g.strokeStyle = '#8be9ff';
+  g.lineWidth = 2.5;
+  g.lineCap = 'round';
+  g.beginPath();
+  drawPoints.forEach((p, i) => {
+    if (i === 0) g.moveTo(p[0], p[1]);
+    else g.lineTo(p[0], p[1]);
+  });
+  g.stroke();
+}
+
+function padPoint(e: PointerEvent): [number, number] {
+  const r = ($('drawPad') as HTMLCanvasElement).getBoundingClientRect();
+  return [((e.clientX - r.left) / r.width) * 320, ((e.clientY - r.top) / r.height) * 320];
+}
+
+function initDrawRealm(): void {
+  $('btnDrawRealm').addEventListener('click', () => { sfx.click(); openDrawRealm(); });
+  $('btnDrawClose').addEventListener('click', () => $('ovDraw').classList.remove('show'));
+  $('btnDrawClear').addEventListener('click', () => openDrawRealm());
+  const pad = $('drawPad') as HTMLCanvasElement;
+  pad.addEventListener('pointerdown', e => {
+    drawing = true;
+    drawPoints = [padPoint(e)];
+    pad.setPointerCapture(e.pointerId);
+    e.preventDefault();
+  });
+  pad.addEventListener('pointermove', e => {
+    if (!drawing) return;
+    const p = padPoint(e);
+    const last = drawPoints[drawPoints.length - 1];
+    if (Math.hypot(p[0] - last[0], p[1] - last[1]) >= 3) {
+      drawPoints.push(p);
+      drawStroke();
+    }
+  });
+  const finish = () => {
+    if (!drawing) return;
+    drawing = false;
+    drawStroke();
+    const table = tableFromPoints(drawPoints);
+    if (table) {
+      userShapeTable = table;
+      $('btnDrawFight').removeAttribute('disabled');
+      $('drawTip').textContent = '成形了！点「化为涌灵」迎战它。';
+    } else {
+      $('drawTip').textContent = '这缕影没有闭合——要一笔画回起点哦。';
+    }
+  };
+  pad.addEventListener('pointerup', finish);
+  pad.addEventListener('pointercancel', finish);
+  $('btnDrawFight').addEventListener('click', () => {
+    if (!userShapeTable) return;
+    $('ovDraw').classList.remove('show');
+    mode = { type: 'draw' };
+    startBattle();
+  });
+}
+
 /* ── 标题/地图按钮 ── */
 $('btnPlay').addEventListener('click', () => { sfx.click(); syncEndlessLock(); openMap(); });
 $('btnEndlessTitle').addEventListener('click', () => {
@@ -278,6 +381,7 @@ function frame(now: number): void {
   first: ALL_LEVELS[0] ? ALL_LEVELS[0].name : null,
   mode: mode,
 });
+initDrawRealm();
 UI.showScreen('scrTitle');
 syncEndlessLock();
 fitBattle();

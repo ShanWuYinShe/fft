@@ -102,9 +102,71 @@ function drawTower(ctx: CanvasRenderingContext2D, t: Tower, selected: boolean, t
   }
 }
 
+import type { Enemy } from './state';
+
+/**
+ * 形影灵：按剩余血量实时重建轮廓。
+ * r(θ) = base·(c0·0.55+0.45) + Σ(存活层) amp·cos(kθ+phase)
+ * 削掉哪层，形状就塌哪块——这就是"任意形状拆解为正弦之和"的实时呈现。
+ */
+function drawShapeEnemy(ctx: CanvasRenderingContext2D, e: Enemy, time: number): void {
+  const sh = e.shape!;
+  const alive = e.layers.filter(l => l.amp > 0);
+  const base = sh.baseR * (sh.c0 * 0.55 + 0.45);
+  const spin = time * 0.5 + e.seed;
+  // 轮廓
+  ctx.beginPath();
+  const STEPS = 96;
+  for (let i = 0; i <= STEPS; i++) {
+    const th = (i / STEPS) * Math.PI * 2;
+    let r = base;
+    for (const l of alive) r += l.amp * 0.9 * Math.cos(l.k * th + (l.phase ?? 0));
+    r = Math.max(5, r);
+    const x = e.x + Math.cos(th + spin) * r;
+    const y = e.y + Math.sin(th + spin) * r;
+    if (i === 0) ctx.moveTo(x, y);
+    else ctx.lineTo(x, y);
+  }
+  ctx.closePath();
+  // 按层配色描边（多层用金色主线示意"复合"）
+  ctx.strokeStyle = alive.length > 1 ? '#f2dfa0' : (FREQ_COLOR[alive[0]?.k ?? 1] ?? '#fff');
+  ctx.lineWidth = e.kind.boss ? 2.5 : 2;
+  ctx.shadowColor = 'rgba(242, 223, 160, 0.5)';
+  ctx.shadowBlur = 6;
+  ctx.stroke();
+  ctx.shadowBlur = 0;
+  ctx.fillStyle = 'rgba(242, 223, 160, 0.07)';
+  ctx.fill();
+  // 核心光珠
+  const g = ctx.createRadialGradient(e.x, e.y, 0, e.x, e.y, 10);
+  g.addColorStop(0, e.hitFlash > 0 ? 'rgba(255,255,255,0.95)' : 'rgba(255, 240, 200, 0.9)');
+  g.addColorStop(1, 'rgba(255, 220, 150, 0.05)');
+  ctx.fillStyle = g;
+  ctx.beginPath();
+  ctx.arc(e.x, e.y, 9, 0, TAU);
+  ctx.fill();
+  // 每层血条（色 = 频率色，玩家借此配塔）
+  alive.forEach((l, i) => {
+    const bw = 30;
+    const y = e.y - sh.baseR - 14 - (alive.length - 1 - i) * 5;
+    ctx.fillStyle = 'rgba(10, 16, 34, 0.8)';
+    ctx.fillRect(e.x - bw / 2, y, bw, 3);
+    ctx.fillStyle = FREQ_COLOR[l.k] ?? '#fff';
+    ctx.fillRect(e.x - bw / 2, y, (bw * l.amp) / l.maxAmp, 3);
+  });
+  if (e.hitFlash > 0) {
+    ctx.strokeStyle = 'rgba(255,255,255,' + e.hitFlash * 0.5 + ')';
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.arc(e.x, e.y, sh.baseR + 6, 0, TAU);
+    ctx.stroke();
+  }
+}
+
 function drawEnemy(ctx: CanvasRenderingContext2D, s: Session, time: number): void {
   for (const e of s.enemies) {
     const isBoss = e.kind.boss;
+    if (e.shape) { drawShapeEnemy(ctx, e, time); continue; }
     const baseR = isBoss ? 20 : 12;
     // 花影：每层一道 r(θ)=R + a·sin(kθ+ωt)
     for (const layer of e.layers) {

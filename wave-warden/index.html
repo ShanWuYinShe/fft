@@ -33,6 +33,7 @@
           <button class="mini-btn" id="btnMapBack">回卷首</button>
         </div>
         <div id="mapChapters"></div>
+        <div class="endless-row"><button class="big-btn ghost" id="btnDrawRealm">画 影 秘 境 · 画出你的涌灵</button></div>
       </div>
     </div>
 
@@ -105,6 +106,22 @@
         <div class="btn-row">
           <button class="big-btn" id="btnEndRetry">再入乱流</button>
           <button class="big-btn ghost" id="btnEndMap">回卷首</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 画影秘境 -->
+    <div class="overlay" id="ovDraw">
+      <div class="panel small-panel">
+        <h2>画 影 秘 境</h2>
+        <div class="divider"></div>
+        <p>随手画一个<b style="color:var(--cyan)">闭合的轮廓</b>——秘境会当场把它拆成几缕涌律，化作涌灵向你涌来。任何形状都逃不过这一拆。</p>
+        <div id="drawPadWrap"><canvas id="drawPad" width="320" height="320"></canvas></div>
+        <p class="tip" id="drawTip">一笔画完闭合图形，松开即成。</p>
+        <div class="btn-row">
+          <button class="mini-btn" id="btnDrawClear">重画</button>
+          <button class="big-btn" id="btnDrawFight" disabled>化 为 涌 灵</button>
+          <button class="mini-btn" id="btnDrawClose">离开</button>
         </div>
       </div>
     </div>

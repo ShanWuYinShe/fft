@@ -114,3 +114,12 @@ body {
 .overlay.show { display: flex; }
 .stars { font-size: 30px; letter-spacing: 8px; color: var(--gold); margin: 10px 0; }
 .stars .off { color: #3a4160; }
+
+/* 画影秘境 */
+#drawPadWrap { display: flex; justify-content: center; margin: 10px 0; }
+#drawPad {
+  background: radial-gradient(circle at 50% 50%, rgba(40, 60, 120, 0.35), rgba(8, 11, 26, 0.9));
+  border: 1px dashed rgba(139, 200, 255, 0.4); border-radius: 14px;
+  cursor: crosshair; touch-action: none;
+}
+#btnDrawFight[disabled] { opacity: 0.4; cursor: default; }
