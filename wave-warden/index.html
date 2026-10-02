@@ -1,0 +1,114 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>镇澜 · 涌律守护</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@400;600;900&display=swap" rel="stylesheet" />
+  </head>
+  <body>
+    <!-- 标题 -->
+    <div class="screen show" id="scrTitle">
+      <div class="panel title-panel">
+        <h1>镇 澜</h1>
+        <div class="sub">涌 律 守 护</div>
+        <div class="divider"></div>
+        <p>四方乱流侵扰静水湖。每一股涌灵周身的花影都有<span class="hl">数得清的瓣数</span>——唯有同瓣数的音叉塔唤出的净波，才能将它抚平。</p>
+        <p>看清花影的瓣数，布下对应的音叉塔，别让任何一股乱流涌入静心湖。</p>
+        <div class="btn-row">
+          <button class="big-btn" id="btnPlay">开 始 守 护</button>
+          <button class="big-btn ghost" id="btnEndlessTitle">无 尽 冲 分</button>
+        </div>
+        <div class="tip" id="endlessLockTip"></div>
+      </div>
+    </div>
+
+    <!-- 守护图（选关） -->
+    <div class="screen" id="scrMap">
+      <div class="panel map-panel">
+        <div class="map-head">
+          <h2>守 护 图</h2>
+          <button class="mini-btn" id="btnMapBack">回卷首</button>
+        </div>
+        <div id="mapChapters"></div>
+      </div>
+    </div>
+
+    <!-- 战斗 -->
+    <div class="screen" id="scrBattle">
+      <div id="battleWrap">
+        <div id="hud">
+          <div class="hud-item" title="静心湖的平静">💧 <b id="hudLives">10</b></div>
+          <div class="hud-item" title="潮珠（建造与升级）">◍ <b id="hudPearls">0</b></div>
+          <div class="hud-item">第 <b id="hudWave">1</b>/<span id="hudWaveTotal">5</span> 涌</div>
+          <div class="hud-spacer"></div>
+          <button class="mini-btn" id="btnSpeed">×1</button>
+          <button class="mini-btn" id="btnPause">暂停</button>
+          <button class="big-btn small" id="btnCall">唤醒下一涌 <span id="callBonus"></span></button>
+        </div>
+        <div id="fieldWrap">
+          <canvas id="cv" width="828" height="460"></canvas>
+          <div id="towerPanel" class="hidden">
+            <div id="tpName"></div>
+            <button class="mini-btn" id="btnUpgrade"></button>
+            <button class="mini-btn danger" id="btnSell"></button>
+            <button class="mini-btn" id="btnClosePanel">收起</button>
+          </div>
+        </div>
+        <div id="cardBar"></div>
+      </div>
+    </div>
+
+    <!-- 关卡引子 -->
+    <div class="overlay" id="ovIntro">
+      <div class="panel small-panel">
+        <h2 id="introName"></h2>
+        <div class="divider"></div>
+        <p id="introText"></p>
+        <p class="tip" id="introWaves"></p>
+        <button class="big-btn" id="btnStartWave">布 阵 开 始</button>
+      </div>
+    </div>
+
+    <!-- 过关 -->
+    <div class="overlay" id="ovWin">
+      <div class="panel small-panel">
+        <h2 id="winName">澜平水静</h2>
+        <div class="stars" id="winStars"></div>
+        <p id="winText"></p>
+        <div class="btn-row">
+          <button class="big-btn" id="btnWinNext">继续守护</button>
+          <button class="big-btn ghost" id="btnWinMap">回守护图</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 失败 -->
+    <div class="overlay" id="ovLose">
+      <div class="panel small-panel">
+        <h2>乱流入湖</h2>
+        <p id="loseText"></p>
+        <div class="btn-row">
+          <button class="big-btn" id="btnLoseRetry">再守一次</button>
+          <button class="big-btn ghost" id="btnLoseMap">回守护图</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 无尽结算 -->
+    <div class="overlay" id="ovEndless">
+      <div class="panel small-panel">
+        <h2>无尽终章</h2>
+        <p id="endlessText"></p>
+        <div class="btn-row">
+          <button class="big-btn" id="btnEndRetry">再入乱流</button>
+          <button class="big-btn ghost" id="btnEndMap">回卷首</button>
+        </div>
+      </div>
+    </div>
+
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>
