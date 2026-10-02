@@ -1,0 +1,7 @@
+# 依赖与构建产物
+node_modules/
+dist/
+# AI 中间产物（脚本/截图/临时文件）
+.workwork/
+# 系统文件
+.DS_Store

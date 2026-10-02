@@ -1,0 +1,824 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>星环秘仪 · Epicycle</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@400;600;900&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --gold:#e8c66a; --gold-bright:#f7e3ad; --cyan:#8be9ff; --cyan-dim:rgba(139,233,255,.35);
+    --ink:#0a0d1e; --panel:rgba(15,19,42,.78); --line:rgba(232,198,106,.22);
+    --text:#cfd6f0; --text-dim:#7e88ad; --violet:#9f8cff;
+  }
+  *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  html,body{height:100%}
+  body{
+    background:radial-gradient(120% 90% at 50% -10%, #101632 0%, #0a0d1e 55%, #05060e 100%);
+    color:var(--text); font-family:'Noto Serif SC','Songti SC','STSong',serif;
+    overflow:hidden; user-select:none;
+  }
+  #app{display:flex;flex-direction:column;height:100%}
+
+  /* ── 顶栏 ── */
+  header{
+    display:flex;align-items:center;gap:14px;padding:10px 18px;
+    border-bottom:1px solid var(--line); background:rgba(8,10,24,.55); backdrop-filter:blur(6px);
+    flex-wrap:wrap;
+  }
+  .brand{font-weight:900;font-size:19px;letter-spacing:6px;color:var(--gold-bright);text-shadow:0 0 18px rgba(232,198,106,.45)}
+  .brand small{font-size:10px;letter-spacing:2px;color:var(--text-dim);margin-left:6px;font-weight:400}
+  .lv-title{font-size:14px;color:var(--text)}
+  .lv-title b{color:var(--gold);margin-right:8px;font-weight:600}
+  .score-wrap{margin-left:auto;display:flex;align-items:center;gap:14px}
+  .score-num{font-size:26px;font-weight:900;color:var(--cyan);text-shadow:0 0 14px var(--cyan-dim);min-width:64px;text-align:right;font-variant-numeric:tabular-nums}
+  .score-num em{font-style:normal;font-size:11px;color:var(--text-dim);margin-left:2px}
+  .stars-badge{font-size:15px;letter-spacing:3px;color:var(--gold);min-width:66px}
+  .stars-badge .off{color:#3a4160}
+  #btnAtlas{background:none;border:1px solid var(--line);color:var(--text-dim);border-radius:8px;padding:5px 12px;cursor:pointer;font-family:inherit;font-size:12px;letter-spacing:2px}
+  #btnAtlas:hover{color:var(--gold);border-color:var(--gold)}
+
+  /* ── 主区 ── */
+  main{flex:1;display:flex;min-height:0}
+  #stage{flex:1;position:relative;min-width:0;display:flex;align-items:center;justify-content:center;padding:10px}
+  #cv-box{position:relative;height:100%;aspect-ratio:1/1;max-width:100%;}
+  canvas#cv{width:100%;height:100%;display:block;border-radius:14px;box-shadow:0 0 60px rgba(90,120,255,.08), inset 0 0 80px rgba(0,0,10,.6)}
+  #hint{
+    position:absolute;left:50%;bottom:14px;transform:translateX(-50%);
+    max-width:86%;padding:8px 18px;border-radius:20px;text-align:center;
+    background:rgba(8,10,26,.72);border:1px solid var(--line);
+    font-size:12.5px;line-height:1.7;color:#b9c2e4;pointer-events:none;
+  }
+  #hint b{color:var(--gold)}
+
+  /* ── 右侧面板 ── */
+  aside{
+    width:318px;flex-shrink:0;border-left:1px solid var(--line);
+    background:rgba(10,13,30,.6);backdrop-filter:blur(8px);
+    display:flex;flex-direction:column;overflow-y:auto;padding:12px 14px 16px;gap:10px;
+  }
+  aside::-webkit-scrollbar{width:4px} aside::-webkit-scrollbar-thumb{background:#2a3158;border-radius:2px}
+  .panel-title{font-size:11px;letter-spacing:4px;color:var(--text-dim);text-align:center;margin:2px 0}
+
+  /* 星核 */
+  .core-row{display:flex;align-items:center;gap:12px;justify-content:center}
+  #corePad{
+    width:72px;height:72px;border-radius:10px;position:relative;cursor:grab;touch-action:none;
+    background:radial-gradient(circle at 50% 50%, rgba(159,140,255,.16), rgba(10,12,28,.9));
+    border:1px solid rgba(159,140,255,.35);
+  }
+  #corePad::before,#corePad::after{content:'';position:absolute;background:rgba(159,140,255,.25)}
+  #corePad::before{left:50%;top:6px;bottom:6px;width:1px}
+  #corePad::after{top:50%;left:6px;right:6px;height:1px}
+  #coreDot{
+    position:absolute;width:14px;height:14px;border-radius:50%;left:50%;top:50%;
+    transform:translate(-50%,-50%);background:radial-gradient(circle,#cbb8ff,#7a63e8);
+    box-shadow:0 0 10px rgba(159,140,255,.8);
+  }
+  .core-tip{font-size:11px;color:var(--text-dim);line-height:1.8;width:150px}
+  .core-tip b{color:var(--violet)}
+
+  /* 符环卡片 */
+  #rings{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+  .ring-card{
+    border:1px solid rgba(139,233,255,.18);border-radius:12px;padding:8px 9px 9px;
+    background:linear-gradient(160deg, rgba(20,26,54,.85), rgba(12,15,34,.85));
+    display:flex;flex-direction:column;gap:6px;
+  }
+  .ring-card.awake{border-color:rgba(139,233,255,.4);box-shadow:0 0 14px rgba(139,233,255,.06)}
+  .ring-card.asleep{opacity:.38;filter:grayscale(.7)}
+  .ring-head{display:flex;align-items:center;gap:6px;font-size:12px}
+  .ring-name{color:#aeb8dd;letter-spacing:1px}
+  .ring-dir{margin-left:auto;font-size:10px;padding:2px 6px;border-radius:8px;letter-spacing:1px}
+  .ring-dir.cw{color:#8be9ff;background:rgba(139,233,255,.1);border:1px solid rgba(139,233,255,.25)}
+  .ring-dir.ccw{color:#f0a8c0;background:rgba(240,168,192,.08);border:1px solid rgba(240,168,192,.25)}
+  .ring-body{display:flex;align-items:center;gap:8px}
+  .dial{
+    width:52px;height:52px;flex-shrink:0;border-radius:50%;position:relative;cursor:grab;touch-action:none;
+    background:radial-gradient(circle at 38% 32%, #232a52, #101428 70%);
+    border:1px solid rgba(139,233,255,.35);
+  }
+  .dial .ptr{
+    position:absolute;left:50%;top:50%;width:2px;height:20px;
+    background:linear-gradient(to top, rgba(139,233,255,.15), var(--cyan));
+    transform-origin:50% 100%;
+    transform:translate(-50%,-100%);
+  }
+  .dial .hub{position:absolute;left:50%;top:50%;width:6px;height:6px;border-radius:50%;background:var(--cyan);transform:translate(-50%,-50%);box-shadow:0 0 6px var(--cyan)}
+  .ring-ctl{flex:1;display:flex;flex-direction:column;gap:5px;min-width:0}
+  .amp-row{display:flex;align-items:center;gap:6px}
+  .amp-label{font-size:10px;color:var(--text-dim);letter-spacing:1px;flex-shrink:0}
+  input[type=range]{
+    -webkit-appearance:none;appearance:none;width:100%;height:3px;border-radius:2px;outline:none;
+    background:linear-gradient(to right, var(--cyan) var(--fill,0%), #232a52 var(--fill,0%));
+    cursor:pointer;
+  }
+  input[type=range]::-webkit-slider-thumb{
+    -webkit-appearance:none;width:14px;height:14px;border-radius:50%;
+    background:radial-gradient(circle at 35% 30%, #d8f6ff, #4cc3e8);border:none;
+    box-shadow:0 0 8px var(--cyan-dim);
+  }
+  input[type=range]::-moz-range-thumb{width:14px;height:14px;border-radius:50%;background:#7de3ff;border:none;box-shadow:0 0 8px var(--cyan-dim)}
+  .resonance{
+    align-self:flex-start;font-size:10px;letter-spacing:1px;color:#e8c66a;background:none;
+    border:1px solid rgba(232,198,106,.35);border-radius:8px;padding:2px 8px;cursor:pointer;font-family:inherit;
+  }
+  .resonance:hover{background:rgba(232,198,106,.12)}
+  .asleep-tag{font-size:11px;color:var(--text-dim);letter-spacing:2px;text-align:center;padding:14px 0}
+  .ring-card.asleep .ring-head{justify-content:center}
+
+  /* 探测信息 */
+  #resonance-log{
+    min-height:44px;border:1px dashed rgba(232,198,106,.3);border-radius:10px;
+    padding:8px 12px;font-size:12px;line-height:1.8;color:#d9c98f;
+  }
+  #resonance-log .mute{color:var(--text-dim)}
+  #resLeft{color:var(--text-dim);font-size:11px;text-align:right}
+
+  /* 工具按钮 */
+  .tools{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+  .tbtn{
+    background:rgba(20,26,54,.6);border:1px solid rgba(120,135,190,.28);color:#aab4d8;
+    border-radius:10px;padding:8px 4px;font-family:inherit;font-size:12px;letter-spacing:3px;cursor:pointer;
+  }
+  .tbtn:hover{border-color:var(--cyan);color:var(--cyan)}
+  .tbtn.on{border-color:var(--cyan);color:var(--cyan);background:rgba(139,233,255,.08)}
+
+  /* 关卡点 */
+  #levelDots{display:flex;justify-content:center;gap:18px;padding:10px 0 2px}
+  .ldot{width:13px;height:13px;border-radius:50%;border:1px solid #3a4160;background:#161b36;cursor:pointer;position:relative}
+  .ldot.locked{opacity:.35;cursor:default}
+  .ldot.done{background:radial-gradient(circle,#f7e3ad,#c99b3f);border-color:var(--gold);box-shadow:0 0 8px rgba(232,198,106,.5)}
+  .ldot.cur{border-color:var(--cyan);box-shadow:0 0 10px var(--cyan-dim)}
+  .ldot.cur::after{content:'';position:absolute;inset:-5px;border:1px solid var(--cyan-dim);border-radius:50%}
+
+  /* ── 覆盖层 ── */
+  .overlay{
+    position:fixed;inset:0;display:flex;align-items:center;justify-content:center;z-index:50;
+    background:rgba(4,6,16,.78);backdrop-filter:blur(10px);
+    opacity:0;pointer-events:none;transition:opacity .5s;
+  }
+  .overlay.show{opacity:1;pointer-events:auto}
+  .scroll{
+    max-width:520px;width:92%;max-height:88vh;overflow-y:auto;
+    border:1px solid var(--line);border-radius:18px;padding:34px 38px;
+    background:linear-gradient(170deg, rgba(18,23,50,.96), rgba(9,11,26,.96));
+    box-shadow:0 0 80px rgba(232,198,106,.1);text-align:center;
+  }
+  .scroll h1{font-size:34px;font-weight:900;letter-spacing:14px;color:var(--gold-bright);text-shadow:0 0 24px rgba(232,198,106,.5);margin-bottom:6px}
+  .scroll h2{font-size:20px;font-weight:600;letter-spacing:8px;color:var(--gold);margin-bottom:16px}
+  .scroll .divider{width:120px;height:1px;background:linear-gradient(to right,transparent,var(--gold),transparent);margin:14px auto 18px}
+  .scroll p{font-size:13.5px;line-height:2.2;color:#b8c1e2;text-align:justify;text-align-last:center}
+  .scroll .big-btn{
+    margin-top:22px;background:linear-gradient(160deg,#2a2450,#181c3c);color:var(--gold-bright);
+    border:1px solid rgba(232,198,106,.5);border-radius:12px;padding:12px 44px;
+    font-family:inherit;font-size:15px;letter-spacing:8px;cursor:pointer;
+    box-shadow:0 0 24px rgba(232,198,106,.15);
+  }
+  .scroll .big-btn:hover{box-shadow:0 0 34px rgba(232,198,106,.35)}
+  .win-stars{font-size:26px;letter-spacing:8px;color:var(--gold);margin:8px 0}
+  .win-stars .off{color:#3a4160}
+  .win-score{font-size:44px;font-weight:900;color:var(--cyan);text-shadow:0 0 20px var(--cyan-dim)}
+  .atlas-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin:16px 0}
+  .atlas-item{border:1px solid var(--line);border-radius:10px;padding:6px;font-size:10px;color:var(--text-dim)}
+  .atlas-item canvas{width:100%;aspect-ratio:1;display:block;border-radius:6px;background:#070918}
+  .atlas-item .nm{margin-top:4px;letter-spacing:1px}
+  .truth{border-top:1px dashed rgba(232,198,106,.3);margin-top:14px;padding-top:14px}
+  .truth p{font-size:12.5px;color:#cbb98a;text-align-last:left}
+  .truth .locked-tip{color:var(--text-dim);letter-spacing:2px}
+
+  @media (max-width:900px){
+    main{flex-direction:column;overflow-y:auto}
+    #stage{flex:none;height:62vw;max-height:70vh}
+    aside{width:100%;border-left:none;border-top:1px solid var(--line)}
+    body{overflow:auto}
+  }
+</style>
+</head>
+<body>
+<div id="app">
+  <header>
+    <div class="brand">星环秘仪<small>E P I C Y C L E</small></div>
+    <div class="lv-title"><b id="lvName"></b><span id="lvStar"></span></div>
+    <div class="score-wrap">
+      <div class="stars-badge" id="starsBadge"></div>
+      <div class="score-num"><span id="scoreNow">0</span><em>重合度</em></div>
+      <button id="btnAtlas">星图录</button>
+    </div>
+  </header>
+
+  <main>
+    <div id="stage">
+      <div id="cv-box">
+        <canvas id="cv"></canvas>
+        <div id="hint"></div>
+      </div>
+    </div>
+    <aside>
+      <div class="panel-title">星 核 定 位</div>
+      <div class="core-row">
+        <div id="corePad"><div id="coreDot"></div></div>
+        <div class="core-tip">拖动星核，整幅轨迹将随之漂移。<b>部分星图远离原点，需先定其位。</b></div>
+      </div>
+
+      <div class="panel-title">符 环 之 阵</div>
+      <div id="rings"></div>
+
+      <div class="panel-title">共 呜 探 测</div>
+      <div id="resLeft"></div>
+      <div id="resonance-log"><span class="mute">点按符环上的「探测」，聆听它与星图的共鸣……</span></div>
+
+      <div class="tools">
+        <button class="tbtn on" id="btnForm">显 形</button>
+        <button class="tbtn" id="btnTarget">隐去星图</button>
+        <button class="tbtn" id="btnPause">凝 神</button>
+        <button class="tbtn" id="btnReset">重 置</button>
+      </div>
+
+      <div id="levelDots"></div>
+    </aside>
+  </main>
+</div>
+
+<!-- 标题 -->
+<div class="overlay show" id="ovTitle">
+  <div class="scroll">
+    <h1>星环秘仪</h1>
+    <div style="font-size:11px;letter-spacing:6px;color:var(--text-dim)">E P I C Y C L E</div>
+    <div class="divider"></div>
+    <p>传说远古星官遗落了七幅星图。每当夜幕降临，八枚符环便开始静静旋转——环上星光层层叠映，在苍穹中画出流转的轨迹。</p>
+    <p style="margin-top:8px">调转符环的<b style="color:var(--cyan)">星辉</b>与<b style="color:var(--gold)">方位</b>，让轨迹与残缺的金色星图重合，沉睡的星座便会苏醒。</p>
+    <button class="big-btn" id="btnStart">入 夜 · 开 始 观 测</button>
+  </div>
+</div>
+
+<!-- 过关 -->
+<div class="overlay" id="ovWin">
+  <div class="scroll">
+    <h2 id="winTitle">星图重明</h2>
+    <div class="divider"></div>
+    <div class="win-score"><span id="winScore">0</span><span style="font-size:14px;color:var(--text-dim)"> 重合</span></div>
+    <div class="win-stars" id="winStars"></div>
+    <p id="winText"></p>
+    <button class="big-btn" id="btnNext">继续观测</button>
+  </div>
+</div>
+
+<!-- 图鉴 -->
+<div class="overlay" id="ovAtlas">
+  <div class="scroll">
+    <h2>星 图 录</h2>
+    <div class="divider"></div>
+    <div class="atlas-grid" id="atlasGrid"></div>
+    <div class="truth" id="truthBox"></div>
+    <button class="big-btn" id="btnCloseAtlas">合 上</button>
+  </div>
+</div>
+
+<script>
+'use strict';
+const TAU = Math.PI * 2;
+
+/* ════════ 关卡定义 ════════ */
+const rot2 = (x, y, a) => ({ re: x*Math.cos(a) - y*Math.sin(a), im: x*Math.sin(a) + y*Math.cos(a) });
+
+const LEVELS = [
+  { star:'天枢', name:'初醒之环',
+    hint:'拉起 <b>符环·壹</b> 的星辉，让光点沿金色星轨画出一个完整的圆。',
+    curve: t => ({ re: 1.15*Math.cos(t), im: 1.15*Math.sin(t) }),
+    win:'夜空中第一个圆，是一切星轨的起点。天枢，醒了。' },
+  { star:'天璇', name:'流转之环',
+    hint:'<b>逆行</b>的符环·贰已苏醒。顺逆两环同时调起，圆会被拉成流转的椭圆。',
+    curve: t => ({ re: 1.25*Math.cos(t) + 0.50*Math.cos(-t), im: 1.25*Math.sin(t) + 0.50*Math.sin(-t) }),
+    win:'顺行与逆行彼此牵引，圆便成了流转之环。天璇，醒了。' },
+  { star:'天玑', name:'三尖星辉',
+    hint:'符环·肆的转速<b>加倍</b>。让缓行的壹与加倍逆行的肆共舞，三道尖辉便会浮现。',
+    curve: t => ({ re: 1.05*Math.cos(t) + 0.42*Math.cos(-2*t), im: 1.05*Math.sin(t) + 0.42*Math.sin(-2*t) }),
+    win:'一缓一疾，三尖立现。天玑，醒了。' },
+  { star:'心宿二', name:'心宿',
+    hint:'拖动面板顶端的<b>星核</b>——整幅轨迹会随之漂移。心宿远离原点，需先定其位。',
+    curve: t => rot2(0.62 + 0.68*Math.cos(t) + 0.42*Math.cos(2*t), 0.68*Math.sin(t) + 0.42*Math.sin(2*t), -Math.PI/2),
+    win:'星核既定，双环共舞，赤色星官的心脏重新搏动。心宿，醒了。' },
+  { star:'玉衡', name:'五芒',
+    hint:'符环·柒转速<b>极迅</b>。缓行的壹与极迅逆行的柒相叠，五道星芒将破空而出。方位不对？转一转符环的朝向。',
+    curve: t => rot2(1.08*Math.cos(t) + 0.36*Math.cos(-4*t), 1.08*Math.sin(t) + 0.36*Math.sin(-4*t), Math.PI/2),
+    win:'一缓一迅，五芒破空。玉衡，醒了。' },
+  { star:'开阳', name:'四瓣花语',
+    hint:'三枚符环在此共鸣：<b>壹、贰、陆</b>——一顺两逆，缺一不可。沉睡的符环无需唤醒。',
+    curve: t => ({ re: 1.00*Math.cos(t) + 0.50*Math.cos(-3*t) + 0.18*Math.cos(-t), im: 1.00*Math.sin(t) + 0.50*Math.sin(-3*t) + 0.18*Math.sin(-t) }),
+    win:'三环齐鸣，四瓣绽开。开阳，醒了。' },
+  { star:'摇光', name:'失落星图',
+    hint:'最后的星图残缺而繁复：<b>星核与五枚符环</b>交织成窗。善用共鸣探测，凝神细调。',
+    curve: t => ({ re: 0.45 + 0.75*Math.cos(t+0.5) + 0.55*Math.cos(-2*t+2.1) + 0.35*Math.cos(3*t+4.0) + 0.28*Math.cos(-4*t+1.2) + 0.20*Math.cos(2*t+5.0),
+                    im:        0.75*Math.sin(t+0.5) + 0.55*Math.sin(-2*t+2.1) + 0.35*Math.sin(3*t+4.0) + 0.28*Math.sin(-4*t+1.2) + 0.20*Math.sin(2*t+5.0) }),
+    win:'星核归位，六环同辉——失落的星图重明于夜空。七星连珠，秘仪已成。' },
+];
+
+/* 每关可选的探测次数 */
+const RES_MAX = 2;
+
+/* ════════ 目标构建：采样 → DFT 截断 → 归一化 ════════ */
+function buildTarget(lv){
+  const N = 4096, M = 720;
+  const raw = []; for (let j = 0; j < N; j++) raw.push(lv.curve(j / N * TAU));
+  const coef = {};
+  for (let k = -4; k <= 4; k++){
+    let re = 0, im = 0;
+    for (let j = 0; j < N; j++){
+      const a = -TAU * k * j / N, p = raw[j];
+      re += p.re*Math.cos(a) - p.im*Math.sin(a);
+      im += p.re*Math.sin(a) + p.im*Math.cos(a);
+    }
+    coef[k] = { re: re/N, im: im/N };
+  }
+  // 峰值归一化到 1.42
+  let peak = 0;
+  for (let j = 0; j < M; j++){
+    let re = 0, im = 0;
+    for (let k = -4; k <= 4; k++){
+      const a = TAU*k*j/M, c = coef[k];
+      re += c.re*Math.cos(a) - c.im*Math.sin(a);
+      im += c.re*Math.sin(a) + c.im*Math.cos(a);
+    }
+    peak = Math.max(peak, Math.hypot(re, im));
+  }
+  const s = 1.38 / peak;
+  for (const k of Object.keys(coef)) { coef[k].re *= s; coef[k].im *= s; }
+
+  // 目标点列（重建，保证与符环系统完全同构 → 满分可达成）
+  const pts = [];
+  for (let j = 0; j < M; j++){
+    let re = 0, im = 0;
+    for (let k = -4; k <= 4; k++){
+      const a = TAU*k*j/M, c = coef[k];
+      re += c.re*Math.cos(a) - c.im*Math.sin(a);
+      im += c.re*Math.sin(a) + c.im*Math.cos(a);
+    }
+    pts.push({ x: re, y: im });
+  }
+  const active = [];
+  for (const k of [1,-1,2,-2,3,-3,4,-4])
+    if (Math.hypot(coef[k].re, coef[k].im) > 0.006) active.push(k);
+  const truth = {};
+  for (const k of active)
+    truth[k] = { mag: Math.hypot(coef[k].re, coef[k].im), phase: Math.atan2(coef[k].im, coef[k].re) };
+  return { coef, pts, active, truth, center: { x: coef[0].re, y: coef[0].im } };
+}
+const TARGETS = LEVELS.map(buildTarget);
+
+/* ════════ 状态 ════════ */
+const RING_DEFS = [
+  { k: 1, cn:'壹', dir:'顺行', tag:'缓' }, { k:-1, cn:'贰', dir:'逆行', tag:'缓' },
+  { k: 2, cn:'叁', dir:'顺行', tag:'疾' }, { k:-2, cn:'肆', dir:'逆行', tag:'疾' },
+  { k: 3, cn:'伍', dir:'顺行', tag:'骤' }, { k:-3, cn:'陆', dir:'逆行', tag:'骤' },
+  { k: 4, cn:'柒', dir:'顺行', tag:'迅' }, { k:-4, cn:'捌', dir:'逆行', tag:'迅' },
+];
+const AMP_MAX = 1.42;
+
+const store = {
+  lv: 0,
+  saves: LEVELS.map(() => null),
+  showForm: true, showTarget: true, paused: false,
+};
+const progress = JSON.parse(localStorage.getItem('epicycle-progress') || '{"best":[],"unlocked":0}');
+progress.best = progress.best || [];
+
+function freshSave(ti){
+  const t = TARGETS[ti];
+  return { rings: t.active.map(k => ({ k, amp: 0, phase: 0 })), center: { x: 0, y: 0 }, resLeft: RES_MAX };
+}
+function save(i){ return store.saves[i] || (store.saves[i] = freshSave(i)); }
+
+/* ════════ DOM ════════ */
+const $ = id => document.getElementById(id);
+const cv = $('cv'), ctx = cv.getContext('2d');
+let W = 0, H = 0, DPR = 1;
+function resize(){
+  const box = $('cv-box');
+  DPR = Math.min(window.devicePixelRatio || 1, 2);
+  const rect = box.getBoundingClientRect();
+  W = Math.max(200, rect.width); H = Math.max(200, rect.height);
+  cv.width = W * DPR; cv.height = H * DPR;
+}
+window.addEventListener('resize', resize);
+
+/* 视野: 世界 [-VIEW, VIEW] → 画布 */
+const VIEW = 1.62;
+const wx = x => (x / VIEW * 0.5 + 0.5) * W;
+const wy = y => (0.5 - y / VIEW * 0.5) * H;
+
+/* ════════ 背景星空 ════════ */
+const bg = document.createElement('canvas');
+function paintBG(){
+  bg.width = 900; bg.height = 900;
+  const g = bg.getContext('2d');
+  const grad = g.createRadialGradient(450, 330, 40, 450, 450, 620);
+  grad.addColorStop(0, '#141b3d'); grad.addColorStop(.55, '#0a0e24'); grad.addColorStop(1, '#05070f');
+  g.fillStyle = grad; g.fillRect(0, 0, 900, 900);
+  for (let i = 0; i < 240; i++){
+    const x = Math.random()*900, y = Math.random()*900, r = Math.random();
+    g.globalAlpha = .18 + Math.random()*.5;
+    g.fillStyle = Math.random() < .12 ? '#cfe4ff' : '#8f9bd0';
+    g.beginPath(); g.arc(x, y, r*r*1.5 + .3, 0, TAU); g.fill();
+  }
+  g.globalAlpha = 1;
+}
+paintBG();
+
+/* 闪烁星尘（目标点用） */
+const twinkle = Array.from({length: 720}, () => Math.random()*TAU);
+
+/* ════════ 玩家轨迹 ════════ */
+let tAnim = 0;            // 笔尖动画相位
+let drawnT = 0;           // 已画出的弧（生长动画）
+function playerZ(t, sv){
+  let x = sv.center.x, y = sv.center.y;
+  for (const r of sv.rings){
+    if (r.amp <= 0) continue;
+    const a = r.k*t + r.phase;
+    x += r.amp*Math.cos(a); y += r.amp*Math.sin(a);
+  }
+  return { x, y };
+}
+/* 嵌套结构渲染用的逐环圆心 */
+function chainCenters(sv){
+  const arr = [{ x: sv.center.x, y: sv.center.y }];
+  const sorted = [...sv.rings].sort((a, b) => Math.abs(a.k) - Math.abs(b.k));
+  for (const r of sorted){
+    const p = arr[arr.length-1], a = r.k*tAnim + r.phase;
+    arr.push({ x: p.x + r.amp*Math.cos(a), y: p.y + r.amp*Math.sin(a) });
+  }
+  return arr;
+}
+
+/* ════════ 评分 ════════ */
+function computeScore(sv){
+  const TP = TARGETS[store.lv].pts;
+  const P = 240, T = TP.length;
+  let s1 = 0;
+  for (let i = 0; i < P; i++){
+    const p = playerZ(i / P * TAU, sv);
+    let m = Infinity;
+    for (let j = 0; j < T; j++){
+      const dx = p.x - TP[j].x, dy = p.y - TP[j].y, d = dx*dx + dy*dy;
+      if (d < m) m = d;
+    }
+    s1 += Math.sqrt(m);
+  }
+  let s2 = 0;
+  for (let j = 0; j < T; j++){
+    const q = TP[j];
+    let m = Infinity;
+    for (let i = 0; i < P; i++){
+      const p = playerZ(i / P * TAU, sv);
+      const dx = p.x - q.x, dy = p.y - q.y, d = dx*dx + dy*dy;
+      if (d < m) m = d;
+    }
+    s2 += Math.sqrt(m);
+  }
+  const avg = (s1/P + s2/T) / 2;
+  return Math.round(100 * Math.exp(-((avg / 0.28) ** 2)));
+}
+
+/* ════════ 音效 ════════ */
+let AC = null;
+function ac(){ if (!AC) AC = new (window.AudioContext || window.webkitAudioContext)(); return AC; }
+function playChord(harmonics){
+  try{
+    const a = ac(), t0 = a.currentTime;
+    const scale = [262, 330, 392, 523, 659, 784];
+    harmonics.slice(0, 6).forEach((k, i) => {
+      const f = scale[Math.min(i, scale.length-1)];
+      const o = a.createOscillator(), g = a.createGain();
+      o.type = 'triangle'; o.frequency.value = f;
+      g.gain.setValueAtTime(0, t0 + i*0.09);
+      g.gain.linearRampToValueAtTime(0.16, t0 + i*0.09 + 0.02);
+      g.gain.exponentialRampToValueAtTime(0.001, t0 + i*0.09 + 1.4);
+      o.connect(g).connect(a.destination);
+      o.start(t0 + i*0.09); o.stop(t0 + i*0.09 + 1.5);
+    });
+  }catch(e){ /* 音频不可用则静默 */ }
+}
+function playTick(){
+  try{
+    const a = ac(), t0 = a.currentTime;
+    const o = a.createOscillator(), g = a.createGain();
+    o.type = 'sine'; o.frequency.value = 1320;
+    g.gain.setValueAtTime(0.05, t0); g.gain.exponentialRampToValueAtTime(0.001, t0 + 0.15);
+    o.connect(g).connect(a.destination); o.start(t0); o.stop(t0 + 0.16);
+  }catch(e){}
+}
+
+/* ════════ 粒子 ════════ */
+let particles = [];
+function burst(){
+  const sv = save(store.lv);
+  for (let i = 0; i < 70; i++){
+    const t = Math.random()*TAU, p = playerZ(t, sv);
+    const ang = Math.random()*TAU, v = 0.15 + Math.random()*0.9;
+    particles.push({ x: p.x, y: p.y, vx: Math.cos(ang)*v, vy: Math.sin(ang)*v, life: 1, r: 1 + Math.random()*2.2 });
+  }
+}
+
+/* ════════ UI 构建 ════════ */
+function buildRingCards(){
+  const box = $('rings'); box.innerHTML = '';
+  const sv = save(store.lv);
+  for (const def of RING_DEFS){
+    const card = document.createElement('div');
+    const st = sv.rings.find(r => r.k === def.k);
+    if (!st){
+      card.className = 'ring-card asleep';
+      card.innerHTML = '<div class="ring-head"><span class="ring-name">符环 · ' + def.cn + '</span></div><div class="asleep-tag">沉 睡 中</div>';
+      box.appendChild(card); continue;
+    }
+    card.className = 'ring-card awake';
+    card.innerHTML =
+      '<div class="ring-head"><span class="ring-name">符环 · ' + def.cn + '</span>' +
+      '<span class="ring-dir ' + (def.k > 0 ? 'cw' : 'ccw') + '">' + def.dir + '·' + def.tag + '</span></div>' +
+      '<div class="ring-body">' +
+        '<div class="dial"><div class="ptr"></div><div class="hub"></div></div>' +
+        '<div class="ring-ctl">' +
+          '<div class="amp-row"><span class="amp-label">星辉</span>' +
+          '<input type="range" min="0" max="1000" value="' + Math.round(st.amp/AMP_MAX*1000) + '"></div>' +
+          '<button class="resonance">探测</button>' +
+        '</div></div>';
+    const range = card.querySelector('input');
+    const dial = card.querySelector('.dial'), ptr = card.querySelector('.ptr');
+    const setFill = () => range.style.setProperty('--fill', (st.amp/AMP_MAX*100) + '%');
+    setFill();
+    range.addEventListener('input', () => {
+      st.amp = range.value / 1000 * AMP_MAX; setFill(); markScoreDirty();
+    });
+    // 转盘
+    const setPtr = () => { ptr.style.transform = 'translate(-50%,-100%) rotate(' + (-st.phase*180/Math.PI) + 'deg)'; };
+    setPtr();
+    let dragging = false, lastA = 0;
+    const angOf = e => {
+      const r = dial.getBoundingClientRect();
+      return Math.atan2(-(e.clientY - (r.top + r.height/2)), e.clientX - (r.left + r.width/2));
+    };
+    dial.addEventListener('pointerdown', e => {
+      dragging = true; lastA = angOf(e); dial.setPointerCapture(e.pointerId); e.preventDefault();
+    });
+    dial.addEventListener('pointermove', e => {
+      if (!dragging) return;
+      const a = angOf(e);
+      let d = a - lastA;
+      if (d > Math.PI) d -= TAU; if (d < -Math.PI) d += TAU;
+      st.phase += d; lastA = a; setPtr(); markScoreDirty();
+    });
+    dial.addEventListener('pointerup', () => dragging = false);
+    dial.addEventListener('pointercancel', () => dragging = false);
+    // 探测
+    card.querySelector('.resonance').addEventListener('click', () => doResonance(def.k));
+    box.appendChild(card);
+  }
+}
+
+function updateDots(){
+  const box = $('levelDots'); box.innerHTML = '';
+  LEVELS.forEach((lv, i) => {
+    const d = document.createElement('div');
+    const unlocked = i <= progress.unlocked;
+    d.className = 'ldot' + (unlocked ? '' : ' locked') + ((progress.best[i] || 0) >= 90 ? ' done' : '') + (i === store.lv ? ' cur' : '');
+    d.title = lv.star + ' · ' + lv.name;
+    if (unlocked) d.addEventListener('click', () => { store.lv = i; loadLevel(); });
+    box.appendChild(d);
+  });
+}
+function starStr(n){
+  const th = [90, 95, 98];
+  let s = '';
+  for (let i = 0; i < 3; i++) s += '<span class="' + (n >= th[i] ? '' : 'off') + '">★</span>';
+  return s;
+}
+function loadLevel(){
+  const lv = LEVELS[store.lv];
+  $('lvName').textContent = '第' + '一二三四五六七'[store.lv] + '幅 · ' + lv.name;
+  $('lvStar').textContent = '「' + lv.star + '」';
+  $('hint').innerHTML = lv.hint;
+  $('scoreNow').textContent = '0';
+  $('starsBadge').innerHTML = starStr(progress.best[store.lv] || 0);
+  $('resonance-log').innerHTML = '<span class="mute">点按符环上的「探测」，聆听它与星图的共鸣……</span>';
+  tAnim = 0; drawnT = 0; particles = [];
+  buildRingCards(); updateDots(); updateResLeft();
+  const c = save(store.lv).center; placeCoreDot(c);
+  scoreDirty = true; passed = false;
+  syncTools();
+}
+function syncTools(){
+  $('btnForm').classList.toggle('on', store.showForm);
+  $('btnTarget').classList.toggle('on', !store.showTarget);
+  $('btnTarget').textContent = store.showTarget ? '隐去星图' : '显现星图';
+  $('btnPause').classList.toggle('on', store.paused);
+  $('btnPause').textContent = store.paused ? '流 转' : '凝 神';
+}
+
+/* 星核 pad */
+const pad = $('corePad'), dot = $('coreDot');
+function placeCoreDot(c){
+  dot.style.left = (50 + c.x / 0.62 * 50) + '%';
+  dot.style.top  = (50 - c.y / 0.62 * 50) + '%';
+}
+let padDrag = false;
+function padMove(e){
+  const r = pad.getBoundingClientRect();
+  const nx = Math.max(-1, Math.min(1, ((e.clientX - r.left) / r.width * 2 - 1)));
+  const ny = Math.max(-1, Math.min(1, -((e.clientY - r.top) / r.height * 2 - 1)));
+  const c = save(store.lv).center;
+  c.x = nx * 0.62; c.y = ny * 0.62; placeCoreDot(c); markScoreDirty();
+}
+pad.addEventListener('pointerdown', e => { padDrag = true; pad.setPointerCapture(e.pointerId); padMove(e); e.preventDefault(); });
+pad.addEventListener('pointermove', e => padDrag && padMove(e));
+pad.addEventListener('pointerup', () => padDrag = false);
+pad.addEventListener('pointercancel', () => padDrag = false);
+
+/* ════════ 共鸣探测（单频分析） ════════ */
+const SECTORS = ['北','东北','东','东南','南','西南','西','西北'];
+function doResonance(k){
+  const sv = save(store.lv);
+  if (sv.resLeft <= 0){ logRes('<span class="mute">星力已竭，本幅星图无法再探测。</span>'); return; }
+  sv.resLeft--; updateResLeft();
+  const tr = TARGETS[store.lv].truth[k];
+  const cn = RING_DEFS.find(d => d.k === k).cn;
+  if (!tr || tr.mag < 0.03){
+    logRes('符环·' + cn + '：<span class="mute">星辉黯淡，几近沉寂——此环与星图几无共鸣。</span>');
+    return;
+  }
+  const maxMag = Math.max(...Object.values(TARGETS[store.lv].truth).map(v => v.mag));
+  const ratio = tr.mag / maxMag;
+  const strength = ratio < 0.28 ? '微光闪烁（一格）' : ratio < 0.55 ? '明亮（两格）' : '炽烈（三格）';
+  const compass = ((90 - tr.phase * 180 / Math.PI) % 360 + 360) % 360;
+  const sector = SECTORS[Math.round(compass / 45) % 8];
+  logRes('符环·' + cn + '：星辉' + strength + '，其方位指向<b style="color:var(--gold)">' + sector + '</b>。');
+  playTick();
+}
+function logRes(html){ $('resonance-log').innerHTML = html; }
+function updateResLeft(){ $('resLeft').textContent = '剩余星力 · ' + '●'.repeat(save(store.lv).resLeft) + '○'.repeat(RES_MAX - save(store.lv).resLeft); }
+
+/* ════════ 渲染 ════════ */
+let scoreDirty = true, passed = false, lastScoreAt = 0;
+
+function render(now){
+  requestAnimationFrame(render);
+  if (!W) return;
+  ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
+  ctx.clearRect(0, 0, W, H);
+  ctx.drawImage(bg, 0, 0, W, H);
+
+  if (!store.paused){
+    tAnim = (tAnim + TAU / 720) % TAU;                 // 约 12s 一圈
+    drawnT = Math.min(drawnT + TAU / 720, TAU);
+  }
+
+  const sv = save(store.lv), tp = TARGETS[store.lv];
+
+  /* 目标星图 */
+  if (store.showTarget){
+    const T = tp.pts.length, step = 4;
+    for (let j = 0; j < T; j += step){
+      const p = tp.pts[j];
+      const tw = 0.55 + 0.45*Math.sin(now*0.002 + twinkle[j]);
+      ctx.globalAlpha = 0.25 + 0.55*tw;
+      ctx.fillStyle = '#e8c66a';
+      ctx.beginPath(); ctx.arc(wx(p.x), wy(p.y), 1.6, 0, TAU); ctx.fill();
+    }
+    ctx.globalAlpha = 1;
+  }
+
+  /* 符环结构 */
+  if (store.showForm){
+    const chain = chainCenters(sv);
+    const sorted = [...sv.rings].sort((a, b) => Math.abs(a.k) - Math.abs(b.k));
+    ctx.lineWidth = 1;
+    for (let i = 0; i < sorted.length; i++){
+      const r = sorted[i], c0 = chain[i], c1 = chain[i+1];
+      const rad = r.amp * (W / (2*VIEW));
+      const active = r.amp > 0.001;
+      ctx.strokeStyle = active ? 'rgba(139,233,255,.28)' : 'rgba(120,135,190,.12)';
+      ctx.beginPath(); ctx.arc(wx(c0.x), wy(c0.y), Math.max(rad, 0.01), 0, TAU); ctx.stroke();
+      if (active){
+        ctx.strokeStyle = 'rgba(139,233,255,.35)';
+        ctx.beginPath(); ctx.moveTo(wx(c0.x), wy(c0.y)); ctx.lineTo(wx(c1.x), wy(c1.y)); ctx.stroke();
+      }
+      ctx.fillStyle = active ? 'rgba(139,233,255,.9)' : 'rgba(120,135,190,.3)';
+      ctx.beginPath(); ctx.arc(wx(c1.x), wy(c1.y), 2, 0, TAU); ctx.fill();
+    }
+  }
+
+  /* 玩家轨迹 */
+  const STEPS = 540;
+  ctx.strokeStyle = 'rgba(139,233,255,.9)';
+  ctx.lineWidth = 1.8;
+  ctx.shadowColor = 'rgba(139,233,255,.8)'; ctx.shadowBlur = 8;
+  ctx.beginPath();
+  const nDraw = Math.max(2, Math.floor(STEPS * drawnT / TAU));
+  for (let i = 0; i <= nDraw; i++){
+    const p = playerZ(i / STEPS * TAU, sv);
+    i === 0 ? ctx.moveTo(wx(p.x), wy(p.y)) : ctx.lineTo(wx(p.x), wy(p.y));
+  }
+  ctx.stroke(); ctx.shadowBlur = 0;
+
+  /* 笔尖 */
+  const tip = playerZ(tAnim, sv);
+  const tg = ctx.createRadialGradient(wx(tip.x), wy(tip.y), 0, wx(tip.x), wy(tip.y), 14);
+  tg.addColorStop(0, 'rgba(230,250,255,1)'); tg.addColorStop(.3, 'rgba(139,233,255,.5)'); tg.addColorStop(1, 'rgba(139,233,255,0)');
+  ctx.fillStyle = tg;
+  ctx.beginPath(); ctx.arc(wx(tip.x), wy(tip.y), 14, 0, TAU); ctx.fill();
+  ctx.fillStyle = '#fff';
+  ctx.beginPath(); ctx.arc(wx(tip.x), wy(tip.y), 2.4, 0, TAU); ctx.fill();
+
+  /* 粒子 */
+  particles = particles.filter(p => p.life > 0);
+  for (const p of particles){
+    if (!store.paused){ p.x += p.vx*0.016; p.y += p.vy*0.016; p.vy -= 0.0006; p.life -= 0.012; }
+    ctx.globalAlpha = Math.max(0, p.life);
+    ctx.fillStyle = '#f7e3ad';
+    ctx.beginPath(); ctx.arc(wx(p.x), wy(p.y), p.r*p.life, 0, TAU); ctx.fill();
+  }
+  ctx.globalAlpha = 1;
+
+  /* 评分（节流） */
+  if (scoreDirty && now - lastScoreAt > 260){
+    lastScoreAt = now; scoreDirty = false;
+    const s = computeScore(sv);
+    $('scoreNow').textContent = s;
+    if (!passed && s >= 90){
+      passed = true;
+      progress.best[store.lv] = Math.max(progress.best[store.lv] || 0, s);
+      if (store.lv + 1 > progress.unlocked) progress.unlocked = Math.min(store.lv + 1, LEVELS.length - 1);
+      localStorage.setItem('epicycle-progress', JSON.stringify(progress));
+      showWin(s);
+    } else if (s > (progress.best[store.lv] || 0)) {
+      progress.best[store.lv] = s;
+      localStorage.setItem('epicycle-progress', JSON.stringify(progress));
+    }
+  }
+}
+
+function showWin(s){
+  const lv = LEVELS[store.lv];
+  $('winScore').textContent = s;
+  $('winStars').innerHTML = starStr(s);
+  $('winTitle').textContent = lv.star + ' · 星图重明';
+  $('winText').textContent = lv.win;
+  $('ovWin').classList.add('show');
+  playChord(TARGETS[store.lv].active.map(k => Math.abs(k)));
+  burst();
+  updateDots();
+  $('btnNext').textContent = (store.lv < LEVELS.length - 1) ? '继续观测' : '仰望星空';
+}
+$('btnNext').addEventListener('click', () => {
+  $('ovWin').classList.remove('show');
+  if (store.lv < LEVELS.length - 1){ store.lv++; loadLevel(); }
+  else setTimeout(openAtlas, 400);
+});
+
+/* ════════ 工具按钮 ════════ */
+$('btnForm').addEventListener('click', () => { store.showForm = !store.showForm; syncTools(); });
+$('btnTarget').addEventListener('click', () => { store.showTarget = !store.showTarget; syncTools(); });
+$('btnPause').addEventListener('click', () => { store.paused = !store.paused; syncTools(); });
+$('btnReset').addEventListener('click', () => {
+  store.saves[store.lv] = freshSave(store.lv);
+  loadLevel();
+});
+
+/* ════════ 标题 / 图鉴 ════════ */
+$('btnStart').addEventListener('click', () => { $('ovTitle').classList.remove('show'); playTick(); });
+$('btnAtlas').addEventListener('click', openAtlas);
+$('btnCloseAtlas').addEventListener('click', () => $('ovAtlas').classList.remove('show'));
+function openAtlas(){
+  const grid = $('atlasGrid'); grid.innerHTML = '';
+  LEVELS.forEach((lv, i) => {
+    const item = document.createElement('div');
+    item.className = 'atlas-item';
+    const unlocked = i <= progress.unlocked;
+    item.innerHTML = '<canvas width="120" height="120"></canvas><div class="nm">' + (unlocked ? lv.star + ' ' + starStr(progress.best[i] || 0) : '？？') + '</div>';
+    grid.appendChild(item);
+    if (!unlocked) return;
+    const c = item.querySelector('canvas').getContext('2d');
+    const pts = TARGETS[i].pts;
+    c.strokeStyle = 'rgba(232,198,106,.9)'; c.lineWidth = 1.4; c.beginPath();
+    for (let j = 0; j <= pts.length; j++){
+      const p = pts[j % pts.length];
+      const x = (p.x / 1.62 * 0.5 + 0.5) * 120, y = (0.5 - p.y / 1.62 * 0.5) * 120;
+      j === 0 ? c.moveTo(x, y) : c.lineTo(x, y);
+    }
+    c.stroke();
+  });
+  const allDone = LEVELS.every((_, i) => (progress.best[i] || 0) >= 90);
+  $('truthBox').innerHTML = allDone
+    ? '<p><b style="color:var(--gold)">秘仪的真相</b> —— 你早已掌握夜的法则：无论多么繁复的星轨，都只是几枚匀速旋转的圆环叠映而成。环的快慢是它的音，星辉是它的强度，朝向是它的方位。三百年前，一位名叫<b style="color:var(--gold)">傅立叶</b>的星官把这条真理写进书中：任何周期轨迹，都可分解为一组旋转之圆的叠加；而「共鸣探测」，正是他聆听每个圆的方法。你转动符环的每一夜，都在实践他留下的——傅立叶级数。</p>'
+    : '<p class="locked-tip">点亮所有七幅星图后，秘仪的真相自会显现……</p>';
+  $('ovAtlas').classList.add('show');
+}
+
+/* ════════ 启动 ════════ */
+function markScoreDirty(){ scoreDirty = true; }
+window.addEventListener('keydown', e => { if (e.code === 'Space'){ e.preventDefault(); store.paused = !store.paused; syncTools(); } });
+resize(); loadLevel(); requestAnimationFrame(render);
+</script>
+</body>
+</html>

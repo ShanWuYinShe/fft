@@ -1,0 +1,96 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
+    <title>星环秘仪 · Epicycle</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@400;600;900&display=swap" rel="stylesheet" />
+  </head>
+  <body>
+    <div id="app">
+      <header>
+        <div class="brand">星环秘仪<small>E P I C Y C L E</small></div>
+        <div class="lv-title"><b id="lvName"></b><span id="lvStar"></span></div>
+        <div class="score-wrap">
+          <div class="stars-badge" id="starsBadge"></div>
+          <div class="score-num"><span id="scoreNow">0</span><em>重合度</em></div>
+          <button id="btnAtlas">星图录</button>
+        </div>
+      </header>
+
+      <main>
+        <div id="stage">
+          <div id="cv-box">
+            <canvas id="cv"></canvas>
+            <div id="hint"></div>
+          </div>
+        </div>
+        <aside>
+          <div class="panel-title">星 核 定 位</div>
+          <div class="core-row">
+            <div id="corePad" title="拖动漂移 · 双击归零"><div id="coreDot"></div></div>
+            <div class="core-tip">拖动星核，整幅轨迹将随之漂移。<b>部分星图远离原点，需先定其位。</b></div>
+          </div>
+
+          <div class="panel-title">符 环 之 阵</div>
+          <div id="rings"></div>
+
+          <div class="panel-title">共 呜 探 测</div>
+          <div id="resLeft"></div>
+          <div id="resonance-log"><span class="mute">点按符环上的「探测」，聆听它与星图的共鸣……</span></div>
+
+          <div class="tools">
+            <button class="tbtn on" id="btnForm" title="显示/隐藏符环结构">显 形</button>
+            <button class="tbtn" id="btnTarget" title="隐藏星图挑战">隐去星图</button>
+            <button class="tbtn" id="btnSlow" title="放慢旋转，便于对准方位">缓 速</button>
+            <button class="tbtn" id="btnPause" title="空格键">凝 神</button>
+            <button class="tbtn" id="btnReset" title="R 键">重 置</button>
+            <button class="tbtn" id="btnSkip" title="卡关时可跳过本关">跳 过</button>
+          </div>
+
+          <div id="levelDots"></div>
+        </aside>
+      </main>
+    </div>
+
+    <!-- 标题 -->
+    <div class="overlay show" id="ovTitle">
+      <div class="scroll">
+        <h1>星环秘仪</h1>
+        <div style="font-size:11px;letter-spacing:6px;color:var(--text-dim)">E P I C Y C L E</div>
+        <div class="divider"></div>
+        <p>传说远古星官遗落了七幅星图。每当夜幕降临，八枚符环便开始静静旋转——环上星光层层叠映，在苍穹中画出流转的轨迹。</p>
+        <p style="margin-top:8px">调转符环的<b style="color:var(--cyan)">星辉</b>与<b style="color:var(--gold)">方位</b>，让轨迹与残缺的金色星图重合，沉睡的星座便会苏醒。</p>
+        <p class="tip-line">操作：拖动转盘定方位 · 滚轮微调 · 双击转盘归零 · 空格凝神</p>
+        <button class="big-btn" id="btnStart">入 夜 · 开 始 观 测</button>
+      </div>
+    </div>
+
+    <!-- 过关 -->
+    <div class="overlay" id="ovWin">
+      <div class="scroll">
+        <h2 id="winTitle">星图重明</h2>
+        <div class="divider"></div>
+        <div class="win-score"><span id="winScore">0</span><span style="font-size:14px;color:var(--text-dim)"> 重合</span></div>
+        <div class="win-stars" id="winStars"></div>
+        <p id="winText"></p>
+        <button class="big-btn" id="btnNext">继续观测</button>
+      </div>
+    </div>
+
+    <!-- 图鉴 -->
+    <div class="overlay" id="ovAtlas">
+      <div class="scroll">
+        <h2>星 图 录</h2>
+        <div class="divider"></div>
+        <div class="atlas-grid" id="atlasGrid"></div>
+        <div class="truth" id="truthBox"></div>
+        <button class="big-btn" id="btnCloseAtlas">合 上</button>
+      </div>
+    </div>
+
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>
