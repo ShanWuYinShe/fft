@@ -1,3 +1,6 @@
+# worktree 独占目录
+.worktrees/
+
 # 依赖与构建产物
 node_modules/
 dist/
