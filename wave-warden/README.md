@@ -11,6 +11,16 @@ npm run build   # tsc 类型检查 + 构建到 dist/
 npm run preview # 预览构建产物
 ```
 
+## 部署
+
+上线在 **game.chaoset.com/wave-warden/**（游戏集合站子路径，nginx 由 fft-cover 仓
+`deploy/nginx-game.chaoset.com.conf` 提供）：
+
+```bash
+npm run build -- --base=/wave-warden/   # 子路径 base 构建到 dist/
+rsync -az --delete dist/ workwork-server:/home/workuser/games/sites/wave-warden/
+```
+
 ## 玩法
 
 - 乱流（敌人）沿水道涌向静心湖，周身花影的**瓣数各不相同**（1~4 瓣）；
