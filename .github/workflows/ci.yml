@@ -1,0 +1,36 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  wave-warden:
+    name: wave-warden (Vite build)
+    runs-on: ubuntu-24.04
+    defaults:
+      run:
+        working-directory: wave-warden
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: wave-warden/package-lock.json
+
+      - name: install
+        run: npm ci
+      # build 含 tsc --noEmit 全量类型检查 + vite 构建
+      - name: production build
+        run: npm run build
