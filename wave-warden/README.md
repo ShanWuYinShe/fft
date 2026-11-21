@@ -53,3 +53,4 @@ rsync -az --delete dist/ workwork-server:/home/workuser/games/sites/wave-warden/
 进度存于 localStorage（键 `wave-warden-progress`），清除即重置。
 
 自动巡检联调测试（第三轮）。
+自动巡检联调测试（第四轮）。
